@@ -57,13 +57,13 @@ const caniuse = require('./caniuse-isSupported.js')
 
 const pkg = require('../package.json');
 
-const configure = ({name, vueTarget, libraryTargetModule}) => (env = {}, { mode = 'production', configName }) => {
+const configure = ({name, vueTarget, libraryTargetModule, target}) => (env = {}, { mode = 'production', configName }) => {
 	if (configName && !configName.includes(name)) {
 		return {name}
 	}
 
 	const distPath = Path.resolve(__dirname, '..', 'dist');
-	const distTypesPath = Path.resolve(distPath, 'types', `vue${ vueTarget }${ libraryTargetModule ? '-esm' : ''}`)
+	const distTypesPath = Path.resolve(distPath, 'types', `vue${ vueTarget }${ libraryTargetModule ? '-esm' : ''}${ target ? '-node' : ''}`)
 
 	const isProd = mode === 'production';
 
@@ -99,7 +99,7 @@ const configure = ({name, vueTarget, libraryTargetModule}) => (env = {}, { mode 
 	// excludes cases that make no sense 
 	actualTargetsBrowsers += ( libraryTargetModule ? ' and supports es6-module' : '' ) + ( vueTarget == 3 ? ' and supports proxy' : '' );
 
-	console.log('config', { actualTargetsBrowsers, noPresetEnv, noCompress, noSourceMap, genSourcemap, libraryTargetModule, vueTarget });
+	console.log('config', { actualTargetsBrowsers, noPresetEnv, noCompress, noSourceMap, genSourcemap, libraryTargetModule, vueTarget, target });
 
 	if ( browserslist(actualTargetsBrowsers).length === 0 )
 		throw new RangeError('browserslist(' + actualTargetsBrowsers + ') selects no browsers');
@@ -114,6 +114,8 @@ const configure = ({name, vueTarget, libraryTargetModule}) => (env = {}, { mode 
 			outputModule: libraryTargetModule,
 		},
 
+    ...target ? { target } : {},
+
 		entry: [
 			Path.resolve(__dirname, '../src/bootstrap.js'),
 			Path.resolve(__dirname, '../src/index.ts'),
@@ -121,7 +123,7 @@ const configure = ({name, vueTarget, libraryTargetModule}) => (env = {}, { mode 
 
 		output: {
 			path: distPath,
-			filename: `vue${ vueTarget }-sfc-loader${ libraryTargetModule ? '.esm' : '' }.js`,
+			filename: `vue${ vueTarget }-sfc-loader${ libraryTargetModule ? '.esm' : '' }${ target ? '.' + target : '' }.js`,
 			...libraryTargetModule ? {
 
 				libraryTarget: 'module',
@@ -456,6 +458,7 @@ let configs = [
 	{name: 'vue2esm', vueTarget: '2', libraryTargetModule: true },
 	{name: 'vue3', vueTarget: '3', libraryTargetModule: false },
 	{name: 'vue3esm', vueTarget: '3', libraryTargetModule: true },
+  {name: 'vue3node', vueTarget: '3', libraryTargetModule: false, target: 'node' }
 ]
 
 module.exports = configs.map(configure)
